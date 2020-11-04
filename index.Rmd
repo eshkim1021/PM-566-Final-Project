@@ -8,3 +8,10 @@ output:
 ---
 
 This is my PM 566 Final Project Website
+
+
+```{r, echo = FALSE,include = FALSE}
+library(tidyverse)
+source("process_COVID_data.R")
+```
+
