@@ -7,11 +7,172 @@ output:
     toc_float: TRUE
 ---
 
-This is my PM 566 Final Project Website
+This is my PM 566 Final Project Website. I will be adding interactive visuals regarding the Covid-19 mortality by state. The data was taken from the New York Times Git Hub Repository
 
 
-```{r, echo = FALSE,include = FALSE}
+```{r, include = FALSE}
 library(tidyverse)
 source("process_COVID_data.R")
 ```
+
+
+```{r, include = FALSE}
+library(ggplot2)
+library(plotly)
+p1_scatter <- cv_states_today %>% 
+  plot_ly(x = ~pop_density, y = ~deathsper100k,
+          type = 'scatter', mode = 'markers', color = ~state,
+          size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5),
+          hoverinfo = 'text',
+          text = ~paste( paste(state, ":", sep=""), paste(" Cases per 100k: ", per100k, sep="") , paste(" Deaths per 100k: ",
+                        deathsper100k, sep=""), sep = "<br>")) %>%
+  layout(title = "Population-normalized COVID-19 deaths vs. population density",
+                  yaxis = list(title = "Deaths per 100k"), xaxis = list(title = "Population Density"),
+         hovermode = "compare")
+
+# filter out "District of Columbia"
+cv_states_today_scatter <- cv_states_today %>% filter(state!="District of Columbia")
+
+p2_scatter <- cv_states_today_scatter %>% 
+  plot_ly(x = ~pop_density, y = ~deathsper100k,
+          type = 'scatter', mode = 'markers', color = ~state,
+          size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5),
+          hoverinfo = 'text',
+          text = ~paste( paste(state, ":", sep=""), paste(" Cases per 100k: ", per100k, sep="") , paste(" Deaths per 100k: ",
+                        deathsper100k, sep=""), sep = "<br>")) %>%
+  layout(title = "Population-normalized COVID-19 deaths vs. population density",
+                  yaxis = list(title = "Deaths per 100k"), xaxis = list(title = "Population Density"),
+         hovermode = "compare")
+```
+
+```{r,include = FALSE}
+
+# add population normalized (by 100,000) counts for each variable
+cv_states$per100k =  as.numeric(format(round(cv_states$cases/(cv_states$population/100000),1),nsmall=1))
+cv_states$newper100k =  as.numeric(format(round(cv_states$new_cases/(cv_states$population/100000),1),nsmall=1))
+cv_states$deathsper100k =  as.numeric(format(round(cv_states$deaths/(cv_states$population/100000),1),nsmall=1))
+cv_states$newdeathsper100k =  as.numeric(format(round(cv_states$new_deaths/(cv_states$population/100000),1),nsmall=1))
+
+# add a naive_CFR variable = deaths / cases
+cv_states = cv_states %>% mutate(naive_CFR = round((deaths*100/cases),2))
+
+# create a `cv_states_today` variable
+### FINISH THE CODE HERE ###
+max_date <- max(cv_states$date)
+cv_states_today = cv_states %>% filter(date == as.Date(max_date))
+```
+
+
+
+```{r, include = FALSE}
+# Adding hoverinfo
+
+# filter out "District of Columbia"
+cv_states_today_scatter <- cv_states_today %>% filter(state!="District of Columbia")
+
+plot1<- cv_states_today_scatter %>% 
+  plot_ly(x = ~pop_density, y = ~deathsper100k,
+          type = 'scatter', mode = 'markers', color = ~state,
+          size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5),
+          hoverinfo = 'text',
+          text = ~paste( paste(state, ":", sep=""), paste(" Cases per 100k: ", per100k, sep="") , paste(" Deaths per 100k: ",
+                        deathsper100k, sep=""), sep = "<br>")) %>%
+  layout(title = "Population-normalized COVID-19 deaths (per 100k) vs. population density",
+                  yaxis = list(title = "Deaths per 100k"), xaxis = list(title = "Population Density"),
+         hovermode = "compare")
+```
+
+
+```{r,include = FALSE}
+
+### For May 1 2020
+
+# Extract the data for each state by its abbreviation
+cv_CFR <- cv_states %>% filter(date=="2020-05-01") %>% select(state, abb, naive_CFR, cases, deaths) # select data
+cv_CFR$state_name <- cv_CFR$state
+cv_CFR$state <- cv_CFR$abb
+cv_CFR$abb <- NULL
+
+# Create hover text
+cv_CFR$hover <- with(cv_CFR, paste(state_name, '<br>', "CFR: ", naive_CFR, '<br>', "Cases: ", cases, '<br>', "Deaths: ", deaths))
+
+# Set up mapping details
+set_map_details <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+
+# Make sure both maps are on the same color scale
+shadeLimit <- 9
+
+# Create the map
+fig <- plot_geo(cv_CFR, locationmode = 'USA-states') %>% 
+  add_trace(
+    z = ~naive_CFR, text = ~hover, locations = ~state,
+    color = ~naive_CFR, colors = 'Purples'
+  )
+fig <- fig %>% colorbar(title = "CFR May 1 2020", limits = c(0,shadeLimit))
+fig <- fig %>% layout(
+    title = paste('CFR by State as of', Sys.Date(), '<br>(Hover for value)'),
+    geo = set_map_details
+  )
+fig_May1 <- fig
+
+#############
+### For Today
+
+# Extract the data for each state by its abbreviation
+cv_CFR <- cv_states_today %>%  select(state, abb, naive_CFR, cases, deaths) # select data
+cv_CFR$state_name <- cv_CFR$state
+cv_CFR$state <- cv_CFR$abb
+cv_CFR$abb <- NULL
+
+# Create hover text
+cv_CFR$hover <- with(cv_CFR, paste(state_name, '<br>', "CFR: ", naive_CFR, '<br>', "Cases: ", cases, '<br>', "Deaths: ", deaths))
+
+# Set up mapping details
+set_map_details <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+
+# Create the map
+fig <- plot_geo(cv_CFR, locationmode = 'USA-states') %>% 
+  add_trace(
+    z = ~naive_CFR, text = ~hover, locations = ~state,
+    color = ~naive_CFR, colors = 'Purples'
+  )
+fig <- fig %>% colorbar(title = "CFR", limits = c(0,shadeLimit))
+fig <- fig %>% layout(
+    title = paste('CFR by State as of', Sys.Date(), '<br>(Hover for value)'),
+    geo = set_map_details
+  )
+fig_Today <- fig
+
+```
+
+## Showcasing Figures {.tabset}
+
+### Interactive Scatterplot
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+plot1
+```
+
+### Interactive Map
+
+```{r, echo = FALSE}
+fig_Today
+```
+
+{-}
+
+
+
+
+
 
