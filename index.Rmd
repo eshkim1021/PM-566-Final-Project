@@ -163,12 +163,16 @@ fig_Today <- fig
 plot1
 ```
 
+
+This plot shows the amount of deaths due to Covid-19 per 100k by population density. Hovering over each state's data will show information regarding cases per 100k and deaths per 100k for that state. 
+
 ### Interactive Map
 
 ```{r, echo = FALSE}
 fig_Today
 ```
 
+This map shows the Case Fatality Rate (CFR) by state as of Novemeber 4th, 2020. Hovering over each state will give each state's respective Cas Fatality Rate, Cases per 100k, and deaths per 100k
 {-}
 
 
